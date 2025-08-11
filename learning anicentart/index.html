@@ -1,0 +1,1431 @@
+<!DOCTYPE html>
+<html lang="en" >
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Idle Hacker Simulator - Full In Edition</title>
+  <style>
+    /* Reset & base */
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0; padding: 0;
+      background: #000;
+      color: #00ff00;
+      font-family: 'Courier New', Courier, monospace;
+      user-select: none;
+      overflow-x: hidden;
+    }
+    #app {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* Terminal style container */
+    .terminal {
+      background: #001100;
+      border: 2px solid #00ff00;
+      border-radius: 10px;
+      padding: 15px;
+      box-shadow:
+        0 0 8px #00ff00,
+        inset 0 0 8px #00ff00;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 2.5rem;
+      letter-spacing: 4px;
+      text-align: center;
+      text-shadow: 0 0 8px #00ff00;
+    }
+
+    h2 {
+      margin: 0;
+      font-size: 1.6rem;
+      border-bottom: 1px solid #00ff00;
+      padding-bottom: 4px;
+    }
+
+    /* Buttons */
+    button {
+      background: #003300;
+      border: 1.5px solid #00ff00;
+      color: #00ff00;
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 1rem;
+      padding: 10px 20px;
+      cursor: pointer;
+      border-radius: 6px;
+      transition: background 0.2s ease, color 0.2s ease;
+      letter-spacing: 2px;
+      user-select: none;
+    }
+    button:active {
+      background: #00ff00;
+      color: #000;
+    }
+    button:disabled {
+      background: #002200;
+      color: #006600;
+      cursor: not-allowed;
+      border-color: #006600;
+    }
+
+    /* Flex containers */
+    .flex-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      justify-content: center;
+      align-items: center;
+    }
+    .flex-column {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    /* Progress bar container */
+    .progress-bar {
+      background: #003300;
+      border: 1px solid #00ff00;
+      border-radius: 4px;
+      width: 100%;
+      height: 25px;
+      overflow: hidden;
+      box-shadow: inset 0 0 5px #006600;
+      position: relative;
+    }
+    .progress-bar-inner {
+      background: #00ff00;
+      height: 100%;
+      width: 0%;
+      transition: width 0.15s ease-out;
+      box-shadow:
+        0 0 12px #00ff00,
+        inset 0 0 5px #00ff00;
+    }
+
+    /* Scrollable output log */
+    #log {
+      background: #002200;
+      border: 1px solid #00ff00;
+      border-radius: 6px;
+      padding: 10px;
+      height: 200px;
+      overflow-y: auto;
+      font-size: 0.9rem;
+      line-height: 1.3rem;
+      user-select: text;
+      white-space: pre-wrap;
+      box-shadow: inset 0 0 10px #00ff00;
+    }
+
+    /* Upgrade cards */
+    .upgrade-card {
+      background: #002200;
+      border: 1px solid #00ff00;
+      border-radius: 8px;
+      padding: 12px;
+      width: 220px;
+      box-shadow: 0 0 8px #00ff00;
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.2s ease;
+    }
+    .upgrade-card:hover:not(.disabled) {
+      background: #003300;
+    }
+    .upgrade-card.disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .upgrade-title {
+      font-weight: bold;
+      font-size: 1.2rem;
+      margin-bottom: 6px;
+    }
+    .upgrade-desc {
+      font-size: 0.85rem;
+      margin-bottom: 8px;
+      min-height: 36px;
+    }
+    .upgrade-price {
+      font-size: 1rem;
+      font-weight: 700;
+      text-align: right;
+      letter-spacing: 1.5px;
+    }
+
+    /* Stats panel */
+    #stats-panel {
+      background: #002200;
+      border: 1px solid #00ff00;
+      border-radius: 8px;
+      padding: 10px;
+      font-size: 0.85rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      justify-content: space-around;
+      box-shadow: inset 0 0 12px #00ff00;
+    }
+    #stats-panel div {
+      flex: 1 1 150px;
+    }
+
+    /* Mini game container */
+    #minigame-container {
+      background: #001100;
+      border: 2px solid #00ff00;
+      border-radius: 10px;
+      padding: 15px;
+      box-shadow: inset 0 0 12px #00ff00;
+      min-height: 120px;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    #minigame-container.active {
+      display: flex;
+    }
+    #minigame-message {
+      font-size: 1.2rem;
+      margin-bottom: 15px;
+    }
+    #minigame-progress {
+      width: 100%;
+      height: 30px;
+      background: #003300;
+      border: 1px solid #00ff00;
+      border-radius: 6px;
+      overflow: hidden;
+      box-shadow: inset 0 0 5px #006600;
+      margin-bottom: 15px;
+      position: relative;
+    }
+    #minigame-progress-inner {
+      background: #00ff00;
+      height: 100%;
+      width: 0%;
+      transition: width 0.1s linear;
+      box-shadow:
+        0 0 12px #00ff00,
+        inset 0 0 5px #00ff00;
+    }
+    #minigame-input {
+      background: #002200;
+      border: 1px solid #00ff00;
+      border-radius: 6px;
+      color: #00ff00;
+      font-family: monospace;
+      font-size: 1.1rem;
+      padding: 10px;
+      width: 100%;
+      max-width: 400px;
+      outline: none;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      user-select: text;
+    }
+    #minigame-input:disabled {
+      background: #001100;
+      border-color: #006600;
+      color: #006600;
+      cursor: not-allowed;
+    }
+
+    /* Glitch effect for header text */
+    .glitch {
+      position: relative;
+      color: #00ff00;
+      text-shadow:
+        0 0 5px #00ff00,
+        0 0 10px #00ff00,
+        0 0 20px #00ff00,
+        0 0 40px #00ff00;
+      animation: glitchAnim 2s infinite;
+    }
+    @keyframes glitchAnim {
+      0%, 20%, 40%, 60%, 80%, 100% {
+        clip-path: polygon(0 2%, 100% 2%, 100% 5%, 0 5%);
+        transform: translate(0);
+      }
+      10% {
+        clip-path: polygon(0 15%, 100% 15%, 100% 20%, 0 20%);
+        transform: translate(-2px, -2px);
+      }
+      30% {
+        clip-path: polygon(0 30%, 100% 30%, 100% 35%, 0 35%);
+        transform: translate(2px, 2px);
+      }
+      50% {
+        clip-path: polygon(0 50%, 100% 50%, 100% 55%, 0 55%);
+        transform: translate(-2px, 2px);
+      }
+      70% {
+        clip-path: polygon(0 70%, 100% 70%, 100% 75%, 0 75%);
+        transform: translate(2px, -2px);
+      }
+      90% {
+        clip-path: polygon(0 90%, 100% 90%, 100% 95%, 0 95%);
+        transform: translate(0);
+      }
+    }
+
+    /* Scrollbar styling for log */
+    #log::-webkit-scrollbar {
+      width: 8px;
+    }
+    #log::-webkit-scrollbar-thumb {
+      background: #00ff00aa;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <h1 class="glitch">IDLE HACKER SIMULATOR</h1>
+
+    <div class="terminal" id="status-panel">
+      <h2>Status</h2>
+      <div id="status-text">Initializing hacking suite...</div>
+      <div class="progress-bar" title="Current hack progress">
+        <div class="progress-bar-inner" id="hack-progress"></div>
+      </div>
+      <div class="flex-row" style="justify-content:center; margin-top:10px;">
+        <button id="btn-hack" disabled>Start Hack</button>
+        <button id="btn-stop" disabled>Abort Hack</button>
+      </div>
+    </div>
+
+    <div class="terminal" id="target-panel">
+      <h2>Targets</h2>
+      <div id="targets-list" class="flex-row"></div>
+    </div>
+
+    <div class="terminal" id="upgrades-panel">
+      <h2>Upgrades</h2>
+      <div id="upgrades-list" class="flex-row"></div>
+    </div>
+
+    <div class="terminal" id="stats-panel">
+      <div>Points: <span id="stat-points">0</span></div>
+      <div>Hack Speed: <span id="stat-hackSpeed">0</span> pts/sec</div>
+      <div>Auto Hack Bots: <span id="stat-bots">0</span></div>
+      <div>Trace Level: <span id="stat-trace">0</span>%</div>
+      <div>Reputation: <span id="stat-rep">0</span></div>
+      <div>Time Played: <span id="stat-time">0</span> sec</div>
+    </div>
+
+    <div class="terminal" id="log-panel">
+      <h2>Logs</h2>
+      <pre id="log"></pre>
+    </div>
+
+    <div class="terminal" id="minigame-container">
+      <div id="minigame-message">Mini-game will appear here</div>
+      <div id="minigame-progress">
+        <div id="minigame-progress-inner"></div>
+      </div>
+      <input id="minigame-input" type="text" autocomplete="off" spellcheck="false" />
+    </div>
+
+  </div>
+
+<script>
+  (() => {
+    'use strict';
+
+    /* =========== GAME STATE =========== */
+    const game = {
+      points: 0,
+      hackSpeed: 1,      // points per second from manual hacking
+      autoBots: 0,       // automated hack bots count
+      autoHackSpeed: 0,  // points per second from bots
+      traceLevel: 0,     // trace level from 0 to 100, if 100 game over
+      reputation: 0,     // rep gained from successful hacks & story progress
+      timePlayed: 0,     // seconds played
+      currentTarget: null,
+      hacking: false,
+      hackProgress: 0,
+      hackProgressMax: 100,
+      upgrades: {},
+      targets: [],
+      eventQueue: [],
+      miniGameActive: false,
+      miniGameData: null,
+    };
+
+    /* =========== DOM ELEMENTS =========== */
+    const btnHack = document.getElementById('btn-hack');
+    const btnStop = document.getElementById('btn-stop');
+    const hackProgressBar = document.getElementById('hack-progress');
+    const statusText = document.getElementById('status-text');
+    const pointsDisplay = document.getElementById('stat-points');
+    const hackSpeedDisplay = document.getElementById('stat-hackSpeed');
+    const botsDisplay = document.getElementById('stat-bots');
+    const traceDisplay = document.getElementById('stat-trace');
+    const repDisplay = document.getElementById('stat-rep');
+    const timeDisplay = document.getElementById('stat-time');
+    const logElement = document.getElementById('log');
+    const targetsList = document.getElementById('targets-list');
+    const upgradesList = document.getElementById('upgrades-list');
+    const minigameContainer = document.getElementById('minigame-container');
+    const minigameMessage = document.getElementById('minigame-message');
+    const minigameProgressBarInner = document.getElementById('minigame-progress-inner');
+    const minigameInput = document.getElementById('minigame-input');
+
+    /* =========== UTILS =========== */
+    function log(msg) {
+      const now = new Date();
+      const time = now.toLocaleTimeString();
+      logElement.textContent += `[${time}] ${msg}\n`;
+      logElement.scrollTop = logElement.scrollHeight;
+    }
+
+    function formatNum(n) {
+      if (n >= 1e6) return (n / 1e6).toFixed(2) + "M";
+      if (n >= 1e3) return (n / 1e3).toFixed(1) + "k";
+      return n.toFixed(0);
+    }
+
+    /* =========== TARGETS SETUP =========== */
+    // Targets are hackable "websites" with difficulty, reward, and story flavor text
+
+    const sampleTargets = [
+      {
+        id: 'local_server',
+        name: 'Local Server',
+        difficulty: 20,  // higher = harder to hack (progress per second slower)
+        baseReward: 25,  // points gained after success
+        description: 'A low-security server used by small businesses.',
+        storyText: [
+          "You breached the local server's firewall with ease.",
+          "Found some juicy employee emails and passwords.",
+          "Low risk, low reward, but a good warm-up."
+        ],
+        unlockAtRep: 0
+      },
+      {
+        id: 'bank_network',
+        name: 'Bank Network',
+        difficulty: 50,
+        baseReward: 100,
+        description: 'Highly secure banking network with encrypted data.',
+        storyText: [
+          "Cracked the bank network defenses.",
+          "Downloaded encrypted transaction logs.",
+          "You can smell the big money here."
+        ],
+        unlockAtRep: 10
+      },
+      {
+        id: 'gov_database',
+        name: 'Government Database',
+        difficulty: 80,
+        baseReward: 300,
+        description: 'Classified government data storage with heavy monitoring.',
+        storyText: [
+          "Bypassed government IDS systems.",
+          "Stole sensitive policy documents.",
+          "The heat is on you now."
+        ],
+        unlockAtRep: 30
+      },
+      {
+        id: 'corp_mainframe',
+        name: 'Corporate Mainframe',
+        difficulty: 120,
+        baseReward: 700,
+        description: 'Mainframe holding corporate secrets and patents.',
+        storyText: [
+          "Extracted confidential R&D files.",
+          "Corporate espionage is paying off.",
+          "Expecting some backlash soon."
+        ],
+        unlockAtRep: 70
+      },
+      {
+        id: 'shadow_net',
+        name: 'ShadowNet',
+        difficulty: 200,
+        baseReward: 1500,
+        description: 'The infamous dark web data nexus, guarded by mercenaries.',
+        storyText: [
+          "Infiltrated ShadowNet’s hidden layers.",
+          "Accessed black market transactions.",
+          "You’re officially a ghost in the machine."
+        ],
+        unlockAtRep: 150
+      },
+    ];
+
+    /* =========== UPGRADES SETUP =========== */
+    // Upgrades boost hack speed, reduce trace, automate hacks, etc.
+
+    const sampleUpgrades = [
+      {
+        id: 'fast_script',
+        name: 'Fast Script',
+        description: 'Increases manual hack speed by 20%.',
+        basePrice: 50,
+        price: 50,
+        priceMultiplier: 1.3,
+        effect: function() {
+          game.hackSpeed *= 1.2;
+        },
+        amount: 0,
+        maxAmount: 10,
+        unlockAtRep: 0
+      },
+      {
+        id: 'auto_bot',
+        name: 'Auto Hack Bot',
+        description: 'Automates hacking, adding 1 point/sec.',
+        basePrice: 200,
+        price: 200,
+        priceMultiplier: 1.4,
+        effect: function() {
+          game.autoBots += 1;
+          game.autoHackSpeed += 1;
+        },
+        amount: 0,
+        maxAmount: 20,
+        unlockAtRep: 5
+      },
+      {
+        id: 'stealth_vpn',
+        name: 'Stealth VPN',
+        description: 'Reduces trace increase by 15%.',
+        basePrice: 500,
+        price: 500,
+        priceMultiplier: 1.5,
+        effect: function() {
+          game.traceReduction = (game.traceReduction || 0) + 0.15;
+        },
+        amount: 0,
+        maxAmount: 5,
+        unlockAtRep: 20
+      },
+      {
+        id: 'exploit_kit',
+        name: 'Exploit Kit',
+        description: 'Boosts hack speed by 50%.',
+        basePrice: 1200,
+        price: 1200,
+        priceMultiplier: 1.6,
+        effect: function() {
+          game.hackSpeed *= 1.5;
+        },
+        amount: 0,
+        maxAmount: 5,
+        unlockAtRep: 50
+      },
+      {
+        id: 'quantum_rig',
+        name: 'Quantum Rig',
+        description: 'Massively boosts all hack speed and automation.',
+        basePrice: 8000,
+        price: 8000,
+        priceMultiplier: 2,
+        effect: function() {
+          game.hackSpeed *= 2;
+          game.autoHackSpeed *= 2;
+        },
+        amount: 0,
+        maxAmount: 3,
+        unlockAtRep: 100
+      },
+    ];
+
+    /* =========== GAME INIT =========== */
+    function initGame() {
+      // Copy sample targets to game state
+      game.targets = sampleTargets.map(t => ({ ...t }));
+      // Copy sample upgrades to game state
+      game.upgrades = {};
+      sampleUpgrades.forEach(u => {
+        game.upgrades[u.id] = { ...u };
+      });
+
+      // Setup UI lists
+      renderTargets();
+      renderUpgrades();
+      updateStats();
+      updateButtons();
+
+      log('Hacking suite ready. Select a target and start hacking.');
+
+      // Enable start button after targets loaded
+      btnHack.disabled = false;
+    }
+
+    /* =========== UI RENDERING =========== */
+    function renderTargets() {
+      targetsList.innerHTML = '';
+      game.targets.forEach(target => {
+        if (target.unlockAtRep <= game.reputation) {
+          const card = document.createElement('div');
+          card.className = 'upgrade-card';
+          card.dataset.targetId = target.id;
+          card.innerHTML = `
+            <div class="upgrade-title">${target.name}</div>
+            <div class="upgrade-desc">${target.description}</div>
+            <div>Difficulty: ${target.difficulty}</div>
+            <div>Reward: ${formatNum(target.baseReward)} pts</div>
+          `;
+          card.addEventListener('click', () => {
+            if (game.hacking) {
+              alert('Abort current hack before changing targets.');
+              return;
+            }
+            selectTarget(target.id);
+          });
+          if (game.currentTarget?.id === target.id) {
+            card.style.border = '2px solid #00ff00';
+          }
+          targetsList.appendChild(card);
+        }
+      });
+    }
+
+    function renderUpgrades() {
+      upgradesList.innerHTML = '';
+      Object.values(game.upgrades).forEach(upg => {
+        if (upg.unlockAtRep <= game.reputation) {
+          const card = document.createElement('div');
+          card.className = 'upgrade-card';
+          if (upg.amount >= upg.maxAmount) {
+            card.classList.add('disabled');
+          }
+          card.dataset.upgradeId = upg.id;
+          card.innerHTML = `
+            <div class="upgrade-title">${upg.name}</div>
+            <div class="upgrade-desc">${upg.description}</div>
+            <div>Owned: ${upg.amount}</div>
+            <div class="upgrade-price">Price: ${formatNum(upg.price)} pts</div>
+          `;
+          card.addEventListener('click', () => {
+            buyUpgrade(upg.id);
+          });
+          if (game.points < upg.price || upg.amount >= upg.maxAmount) {
+            card.classList.add('disabled');
+          }
+          upgradesList.appendChild(card);
+        }
+      });
+    }
+
+    function updateStats() {
+      pointsDisplay.textContent = formatNum(game.points);
+      hackSpeedDisplay.textContent = formatNum(game.hackSpeed);
+      botsDisplay.textContent = formatNum(game.autoBots);
+      traceDisplay.textContent = Math.floor(game.traceLevel);
+      repDisplay.textContent = formatNum(game.reputation);
+      timeDisplay.textContent = Math.floor(game.timePlayed);
+    }
+
+    function updateButtons() {
+      btnHack.disabled = game.hacking || !game.currentTarget;
+      btnStop.disabled = !game.hacking;
+    }
+
+    /* =========== GAME MECHANICS =========== */
+
+    // Select target to hack
+    function selectTarget(targetId) {
+      const tgt = game.targets.find(t => t.id === targetId);
+      if (!tgt) return;
+      game.currentTarget = tgt;
+      game.hackProgress = 0;
+      statusText.textContent = `Ready to hack ${tgt.name}`;
+      updateButtons();
+      renderTargets();
+      log(`Target selected: ${tgt.name}`);
+    }
+
+    // Start hacking process
+    function startHack() {
+      if (!game.currentTarget) return;
+      if (game.hacking) return;
+
+      game.hacking = true;
+      game.hackProgress = 0;
+      statusText.textContent = `Hacking ${game.currentTarget.name}...`;
+      updateButtons();
+      log(`Started hacking ${game.currentTarget.name}`);
+    }
+
+    // Abort hacking process
+    function abortHack() {
+      if (!game.hacking) return;
+
+      game.hacking = false;
+      game.hackProgress = 0;
+      statusText.textContent = 'Hack aborted.';
+      updateButtons();
+      log('Hack aborted by player.');
+    }
+
+    // Attempt hack completion
+    function completeHack() {
+      const tgt = game.currentTarget;
+      if (!tgt) return;
+
+      game.hacking = false;
+      game.hackProgress = 0;
+      // Calculate rewards modified by upgrades and maybe randomness
+      let reward = tgt.baseReward * (1 + (game.reputation * 0.02));
+      game.points += reward;
+      game.reputation += tgt.baseReward * 0.01;
+      statusText.textContent = `Hack successful! Gained ${formatNum(reward)} pts.`;
+      log(tgt.storyText[Math.floor(Math.random() * tgt.storyText.length)]);
+      updateStats();
+      updateButtons();
+      renderTargets();
+      renderUpgrades();
+    }
+
+    /* =========== BUYING UPGRADES =========== */
+    function buyUpgrade(id) {
+      const upg = game.upgrades[id];
+      if (!upg) return;
+      if (game.points < upg.price) return;
+      if (upg.amount >= upg.maxAmount) return;
+
+      game.points -= upg.price;
+      upg.amount++;
+      upg.price = Math.floor(upg.price * upg.priceMultiplier);
+      upg.effect();
+      log(`Bought upgrade: ${upg.name} (${upg.amount})`);
+      updateStats();
+      renderUpgrades();
+    }
+
+    /* =========== GAME LOOP =========== */
+    let lastTime = performance.now();
+
+    function gameLoop(timestamp) {
+      const dt = (timestamp - lastTime) / 1000;
+      lastTime = timestamp;
+
+      // Time played update
+      game.timePlayed += dt;
+
+      // Auto hacking bots
+      if (!game.hacking && game.autoHackSpeed > 0 && game.currentTarget) {
+        game.hackProgress += game.autoHackSpeed * dt * (100 / game.currentTarget.difficulty);
+        if (game.hackProgress >= game.hackProgressMax) {
+          completeHack();
+        }
+      }
+
+      // Manual hacking progress increment (when holding hack button)
+      if (game.hacking && game.currentTarget) {
+        game.hackProgress += game.hackSpeed * dt * (100 / game.currentTarget.difficulty);
+        if (game.hackProgress >= game.hackProgressMax) {
+          completeHack();
+        }
+      }
+
+      // Update progress bar
+      hackProgressBar.style.width = Math.min(game.hackProgress / game.hackProgressMax * 100, 100) + '%';
+
+      // Trace increase if hacking
+      if (game.hacking) {
+        let traceIncrease = 5 * dt;
+        // Reduce trace increase by stealth VPNs
+        if (game.traceReduction) {
+          traceIncrease *= (1 - game.traceReduction);
+        }
+        game.traceLevel = Math.min(game.traceLevel + traceIncrease, 100);
+        if (game.traceLevel >= 100) {
+          gameOver('Trace level maxed! You got caught by the feds.');
+        }
+      } else {
+        // Trace decreases slowly when idle
+        game.traceLevel = Math.max(game.traceLevel - 3 * dt, 0);
+      }
+
+      updateStats();
+      updateButtons();
+
+      // Handle queued events (placeholder)
+      processEvents(dt);
+
+      // Continue the loop
+      if (!game.miniGameActive) {
+        requestAnimationFrame(gameLoop);
+      }
+    }
+
+    /* =========== EVENT SYSTEM PLACEHOLDER =========== */
+    function processEvents(dt) {
+      // Placeholder for later
+    }
+
+    /* =========== GAME OVER =========== */
+    function gameOver(reason) {
+      log(`!!! GAME OVER: ${reason} !!!`);
+      alert(reason + '\nGame will reset.');
+      resetGame();
+    }
+
+    /* =========== RESET GAME =========== */
+    function resetGame() {
+      localStorage.removeItem('idleHackerSave');
+      location.reload();
+    }
+
+    /* =========== SAVE/LOAD SYSTEM =========== */
+    function saveGame() {
+      const save = JSON.stringify(game, (key, val) => {
+        if (key === 'currentTarget' && val) return val.id;
+        return val;
+      });
+      localStorage.setItem('idleHackerSave', save);
+      log('Game saved.');
+    }
+    function loadGame() {
+      const save = localStorage.getItem('idleHackerSave');
+      if (!save) return false;
+      try {
+        const data = JSON.parse(save);
+        Object.assign(game, data);
+
+        // Fix current target from id to full object ref
+        if (game.currentTarget) {
+          game.currentTarget = game.targets.find(t => t.id === game.currentTarget) || null;
+        }
+
+        // Fix upgrades to objects with methods
+        Object.entries(game.upgrades).forEach(([id, upg]) => {
+          const sample = sampleUpgrades.find(s => s.id === id);
+          if (sample) {
+            upg.effect = sample.effect;
+          }
+        });
+
+        log('Game loaded from save.');
+        return true;
+      } catch(e) {
+        log('Failed to load save data.');
+        return false;
+      }
+    }
+
+    /* =========== BUTTON EVENTS =========== */
+    btnHack.addEventListener('click', startHack);
+    btnStop.addEventListener('click', abortHack);
+
+    /* =========== INITIALIZE GAME =========== */
+    initGame();
+    if (!loadGame()) {
+      log('Starting fresh new game.');
+    }
+
+    /* =========== AUTO SAVE EVERY 15 SECONDS =========== */
+    setInterval(saveGame, 15000);
+
+    /* =========== START GAME LOOP =========== */
+    requestAnimationFrame(gameLoop);
+
+  })();
+</script>
+<script>
+(() => {
+  const game = window.game; // use the existing global game object
+  const log = (msg) => {
+    const logEl = document.getElementById('logs');
+    if (!logEl) return;
+    const p = document.createElement('p');
+    p.textContent = `[EVENT] ${msg}`;
+    p.style.color = '#0ff';
+    logEl.appendChild(p);
+    logEl.scrollTop = logEl.scrollHeight;
+  };
+
+  /* ========== RANDOM EVENTS ========== */
+
+  const eventCooldown = { timer: 0, min: 15, max: 30 }; // seconds between events
+  let eventActive = false;
+
+  function randomEventTrigger(dt) {
+    if (eventActive) return;
+    eventCooldown.timer -= dt;
+    if (eventCooldown.timer <= 0) {
+      eventCooldown.timer = eventCooldown.min + Math.random() * (eventCooldown.max - eventCooldown.min);
+      triggerRandomEvent();
+    }
+  }
+
+  function triggerRandomEvent() {
+    eventActive = true;
+    const rand = Math.random();
+    if (rand < 0.5) {
+      // Trace spike event
+      log('Warning: Increased trace activity detected!');
+      game.traceLevel = Math.min(game.traceLevel + 15 + Math.random() * 20, 100);
+      // Trigger mini-game to dodge trace spike
+      startTraceMiniGame(() => {
+        log('Trace spike evaded successfully.');
+        eventActive = false;
+      }, () => {
+        log('Failed to evade trace spike! Trace increased!');
+        game.traceLevel = Math.min(game.traceLevel + 30, 100);
+        eventActive = false;
+        if (game.traceLevel >= 100) {
+          gameOver('Trace level maxed during event! You got caught.');
+        }
+      });
+    } else {
+      // Black market deal event
+      log('Black market contact offering trace reduction service. Press [B] to buy for 500 pts.');
+      // Wait for user input to buy (handled below)
+      eventActive = false; // Let player react, no forced blocking event
+    }
+  }
+
+  /* ========== TRACE MINI-GAME ========== */
+
+  let miniGameActive = false;
+  let miniGameResolveSuccess, miniGameResolveFail;
+  let miniGameSequence = '';
+  let miniGameInput = '';
+
+  const miniGameLength = 6;
+
+  function generateSequence(length) {
+    const chars = 'asdfjkl;';
+    let seq = '';
+    for (let i = 0; i < length; i++) {
+      seq += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return seq;
+  }
+
+  function startTraceMiniGame(onSuccess, onFail) {
+    if (miniGameActive) return;
+    miniGameActive = true;
+    miniGameSequence = generateSequence(miniGameLength);
+    miniGameInput = '';
+    alert(`TRACE ALERT! Type this sequence FAST to avoid trace increase:\n\n${miniGameSequence}`);
+    miniGameResolveSuccess = onSuccess;
+    miniGameResolveFail = onFail;
+  }
+
+  function endTraceMiniGame(success) {
+    miniGameActive = false;
+    if (success) miniGameResolveSuccess && miniGameResolveSuccess();
+    else miniGameResolveFail && miniGameResolveFail();
+  }
+
+  /* ========== BLACK MARKET SERVICE ========== */
+
+  game.blackMarketActive = false;
+  game.blackMarketCooldown = 0;
+
+  function activateBlackMarket() {
+    if (game.points < 500) {
+      log('Not enough points to buy black market service.');
+      return;
+    }
+    if (game.blackMarketCooldown > 0) {
+      log(`Black market service cooling down: ${Math.ceil(game.blackMarketCooldown)}s remaining.`);
+      return;
+    }
+    game.points -= 500;
+    game.blackMarketActive = true;
+    game.blackMarketCooldown = 60;
+    log('Black market service activated: Trace increase halved for 60 seconds.');
+  }
+
+  /* ========== EXTEND GAME LOOP ========== */
+
+  const origGameLoop = window.gameLoop;
+  window.gameLoop = function(timestamp) {
+    origGameLoop(timestamp);
+    if (!window.lastEventUpdate) window.lastEventUpdate = timestamp;
+    const dt = (timestamp - window.lastEventUpdate) / 1000;
+    window.lastEventUpdate = timestamp;
+
+    // Handle event timer
+    randomEventTrigger(dt);
+
+    // Handle black market cooldown and effect
+    if (game.blackMarketCooldown > 0) {
+      game.blackMarketCooldown -= dt;
+      if (game.blackMarketCooldown <= 0) {
+        game.blackMarketCooldown = 0;
+        game.blackMarketActive = false;
+        log('Black market service expired.');
+      }
+    }
+
+    // If black market active, reduce trace increase rate globally
+    if (game.blackMarketActive) {
+      game.traceReduction = (game.traceReduction || 0) + 0.5; // big reduction (50%)
+    } else {
+      // Reset to normal reduction based on upgrades
+      const baseVPNs = game.upgrades.stealth_vpn ? game.upgrades.stealth_vpn.amount * 0.15 : 0;
+      game.traceReduction = baseVPNs;
+    }
+  };
+
+  /* ========== HANDLE PLAYER INPUT FOR MINI-GAME & BLACK MARKET ========== */
+
+  window.addEventListener('keydown', (e) => {
+    if (miniGameActive) {
+      // Check if key matches expected sequence next char
+      if (e.key === miniGameSequence.charAt(miniGameInput.length)) {
+        miniGameInput += e.key;
+        if (miniGameInput.length === miniGameSequence.length) {
+          endTraceMiniGame(true);
+        }
+      } else {
+        endTraceMiniGame(false);
+      }
+      e.preventDefault();
+    } else if (e.key.toLowerCase() === 'b') {
+      // Black market buy hotkey
+      activateBlackMarket();
+      e.preventDefault();
+    }
+  });
+
+  /* ========== NEW UPGRADES ========== */
+
+  const newUpgrades = [
+    {
+      id: 'trace_scrubber',
+      name: 'Trace Scrubber',
+      description: 'Reduces trace increase by 25% for 30s on activation. 60s cooldown.',
+      basePrice: 1500,
+      price: 1500,
+      priceMultiplier: 1.7,
+      amount: 0,
+      maxAmount: 3,
+      unlockAtRep: 40,
+      cooldown: 0,
+      effect: function() {
+        // No passive effect; active ability
+      },
+      activate: function() {
+        if (this.cooldown > 0) {
+          log(`Trace Scrubber on cooldown: ${Math.ceil(this.cooldown)}s left.`);
+          return false;
+        }
+        this.cooldown = 60;
+        game.blackMarketActive = true;
+        game.blackMarketCooldown = 30;
+        log('Trace Scrubber activated: Trace increase halved for 30 seconds.');
+        return true;
+      }
+    },
+    {
+      id: 'risk_accelerator',
+      name: 'Risk Accelerator',
+      description: 'Boosts hack speed by 100% but increases trace gain by 50%.',
+      basePrice: 3000,
+      price: 3000,
+      priceMultiplier: 2,
+      amount: 0,
+      maxAmount: 2,
+      unlockAtRep: 80,
+      effect: function() {
+        game.hackSpeed *= 2;
+        game.traceIncreaseMultiplier = (game.traceIncreaseMultiplier || 1) * 1.5;
+      }
+    }
+  ];
+
+  // Add these to game upgrades on load
+  newUpgrades.forEach(upg => {
+    if (!game.upgrades[upg.id]) {
+      game.upgrades[upg.id] = { ...upg };
+    }
+  });
+
+  /* ========== EXTEND BUY UPGRADE TO HANDLE ACTIVATABLES ========== */
+  const origBuyUpgrade = window.buyUpgrade;
+  window.buyUpgrade = function(id) {
+    const upg = game.upgrades[id];
+    if (!upg) return;
+    if (game.points < upg.price) return;
+    if (upg.amount >= upg.maxAmount) return;
+
+    game.points -= upg.price;
+    upg.amount++;
+    upg.price = Math.floor(upg.price * upg.priceMultiplier);
+    upg.effect && upg.effect();
+    log(`Bought upgrade: ${upg.name} (${upg.amount})`);
+    updateStats();
+    renderUpgrades();
+  };
+
+  /* ========== ADD BUTTON FOR TRACE SCRUBBER ACTIVATION ========== */
+
+  const upgradesSection = document.getElementById('upgrades-list');
+  if (upgradesSection) {
+    const btn = document.createElement('button');
+    btn.textContent = 'Activate Trace Scrubber';
+    btn.style.margin = '10px 0';
+    btn.addEventListener('click', () => {
+      const scrubber = game.upgrades.trace_scrubber;
+      if (scrubber) scrubber.activate();
+    });
+    upgradesSection.parentNode.insertBefore(btn, upgradesSection.nextSibling);
+  }
+
+  /* ========== ACHIEVEMENTS SYSTEM ========== */
+
+  game.achievements = game.achievements || {};
+
+  const achievementsList = [
+    {
+      id: 'first_hack',
+      name: 'First Hack',
+      desc: 'Complete your first successful hack.',
+      condition: () => game.reputation >= 0.1
+    },
+    {
+      id: 'rep_50',
+      name: 'Rising Star',
+      desc: 'Reach 50 reputation.',
+      condition: () => game.reputation >= 50
+    },
+    {
+      id: 'bot_master',
+      name: 'Bot Master',
+      desc: 'Buy 10 Auto Bots.',
+      condition: () => game.upgrades.auto_bot && game.upgrades.auto_bot.amount >= 10
+    }
+  ];
+
+  function checkAchievements() {
+    achievementsList.forEach(ach => {
+      if (!game.achievements[ach.id] && ach.condition()) {
+        game.achievements[ach.id] = true;
+        showAchievement(ach);
+      }
+    });
+  }
+
+  function showAchievement(ach) {
+    const achEl = document.createElement('div');
+    achEl.textContent = `Achievement unlocked: ${ach.name} - ${ach.desc}`;
+    achEl.style.position = 'fixed';
+    achEl.style.top = '20px';
+    achEl.style.right = '20px';
+    achEl.style.backgroundColor = '#0f0';
+    achEl.style.color = '#000';
+    achEl.style.padding = '10px';
+    achEl.style.borderRadius = '5px';
+    achEl.style.zIndex = 10000;
+    document.body.appendChild(achEl);
+    setTimeout(() => document.body.removeChild(achEl), 4000);
+  }
+
+  /* ========== EXTEND GAME LOOP TO CHECK ACHIEVEMENTS ========== */
+  const oldGameLoop = window.gameLoop;
+  window.gameLoop = function(timestamp) {
+    oldGameLoop(timestamp);
+    checkAchievements();
+  };
+
+  /* ========== AUDIO & VISUAL GLITCH EFFECTS ========== */
+
+  // Simple beep on hack start and success
+  const beep = new AudioContext();
+  function playBeep(freq, duration) {
+    const osc = beep.createOscillator();
+    const gain = beep.createGain();
+    osc.connect(gain);
+    gain.connect(beep.destination);
+    osc.frequency.value = freq;
+    osc.start();
+    gain.gain.setValueAtTime(1, beep.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, beep.currentTime + duration);
+    osc.stop(beep.currentTime + duration);
+  }
+
+  const origStartHack = window.startHack;
+  window.startHack = function() {
+    playBeep(440, 0.1);
+    origStartHack();
+  };
+
+  const origCompleteHack = window.completeHack;
+  window.completeHack = function() {
+    playBeep(880, 0.2);
+    origCompleteHack();
+  };
+
+  // Visual glitch effect on trace spike
+  function glitchEffect() {
+    const el = document.body;
+    el.style.filter = 'hue-rotate(20deg) saturate(1.5) brightness(1.2)';
+    setTimeout(() => {
+      el.style.filter = '';
+    }, 300);
+  }
+
+  // Call glitch effect on trace spike event
+  const origTriggerRandomEvent = triggerRandomEvent;
+  triggerRandomEvent = function() {
+    origTriggerRandomEvent();
+    glitchEffect();
+  };
+
+})();
+</script>
+
+<style>
+  /* Mini-game input hint */
+  #logs p[event] {
+    color: #0ff !important;
+  }
+  /* Achievement popup animation */
+  @keyframes fadeInOut {
+    0%, 100% { opacity: 0; }
+    10%, 90% { opacity: 1; }
+  }
+</style>
+
+</body>
+</html>
+<script>
+(() => {
+  const game = window.game;
+
+  const log = (msg, color = '#0f0') => {
+    const logEl = document.getElementById('logs');
+    if (!logEl) return;
+    const p = document.createElement('p');
+    p.textContent = `[LATE-GAME] ${msg}`;
+    p.style.color = color;
+    logEl.appendChild(p);
+    logEl.scrollTop = logEl.scrollHeight;
+  };
+
+  // --------- NEW LATE-GAME UPGRADES ---------
+
+  const lateGameUpgrades = [
+    {
+      id: 'overclocked_cpu',
+      name: 'Overclocked CPU',
+      description: 'Hack speed +300%, but trace increases 200% faster.',
+      basePrice: 500000,
+      priceMultiplier: 2.5,
+      amount: 0,
+      maxAmount: 3,
+      unlockAtRep: 1000,
+      effect: function() {
+        game.hackSpeed *= 4; // stacking multiplicative
+        game.traceIncreaseMultiplier = (game.traceIncreaseMultiplier || 1) * 3;
+      }
+    },
+    {
+      id: 'quantum_firewall_bypass',
+      name: 'Quantum Firewall Bypass',
+      description: 'Auto hacks ignore trace increase for 30s on activation. 90s cooldown.',
+      basePrice: 750000,
+      priceMultiplier: 3,
+      amount: 0,
+      maxAmount: 2,
+      unlockAtRep: 1500,
+      cooldown: 0,
+      activate: function() {
+        if (this.cooldown > 0) {
+          log(`Quantum Firewall Bypass on cooldown: ${Math.ceil(this.cooldown)}s left.`, '#f90');
+          return false;
+        }
+        this.cooldown = 90;
+        game.autoHackNoTrace = true;
+        log('Quantum Firewall Bypass activated: Auto hacks produce no trace for 30 seconds.', '#ff0');
+        setTimeout(() => {
+          game.autoHackNoTrace = false;
+          log('Quantum Firewall Bypass effect ended.', '#f90');
+        }, 30000);
+        return true;
+      }
+    },
+    {
+      id: 'trace_disruptor',
+      name: 'Trace Disruptor',
+      description: 'Reduces trace increase by 50% and doubles trace decay speed.',
+      basePrice: 600000,
+      priceMultiplier: 2.2,
+      amount: 0,
+      maxAmount: 4,
+      unlockAtRep: 1200,
+      effect: function() {
+        game.traceIncreaseMultiplier = (game.traceIncreaseMultiplier || 1) * 0.5;
+        game.traceDecayMultiplier = (game.traceDecayMultiplier || 1) * 2;
+      }
+    },
+    {
+      id: 'neural_interface',
+      name: 'Neural Interface',
+      description: 'Passive rep gain +5% per second.',
+      basePrice: 400000,
+      priceMultiplier: 2,
+      amount: 0,
+      maxAmount: 5,
+      unlockAtRep: 1100,
+      effect: function() {
+        if (!game.neuralInterfaceActive) {
+          game.neuralInterfaceActive = true;
+          game.neuralRepTimer = 0;
+        }
+      }
+    },
+    {
+      id: 'dark_web_market',
+      name: 'Dark Web Market',
+      description: 'Unlocks special items and side missions.',
+      basePrice: 1000000,
+      priceMultiplier: 3,
+      amount: 0,
+      maxAmount: 1,
+      unlockAtRep: 2000,
+      effect: function() {
+        game.darkWebMarketUnlocked = true;
+        log('Dark Web Market unlocked! New side missions available.', '#0ff');
+      }
+    },
+    {
+      id: 'cybernetic_legs',
+      name: 'Cybernetic Legs',
+      description: 'Auto bots hack 2x faster but generate 30% more trace.',
+      basePrice: 450000,
+      priceMultiplier: 2.3,
+      amount: 0,
+      maxAmount: 3,
+      unlockAtRep: 1300,
+      effect: function() {
+        game.autoBotSpeedMultiplier = (game.autoBotSpeedMultiplier || 1) * 2;
+        game.traceIncreaseMultiplier = (game.traceIncreaseMultiplier || 1) * 1.3;
+      }
+    },
+    {
+      id: 'quantum_memory',
+      name: 'Quantum Memory',
+      description: 'Double max upgrade amounts for all upgrades.',
+      basePrice: 700000,
+      priceMultiplier: 2.8,
+      amount: 0,
+      maxAmount: 1,
+      unlockAtRep: 1700,
+      effect: function() {
+        Object.values(game.upgrades).forEach(upg => {
+          upg.maxAmount = (upg.maxAmount || 1) * 2;
+        });
+        log('Quantum Memory activated: Upgrade caps doubled!', '#0f0');
+      }
+    },
+    {
+      id: 'stealth_ai',
+      name: 'Stealth AI',
+      description: 'Bots generate no trace but hack 25% slower.',
+      basePrice: 550000,
+      priceMultiplier: 2,
+      amount: 0,
+      maxAmount: 4,
+      unlockAtRep: 1400,
+      effect: function() {
+        game.autoHackNoTrace = true;
+        game.autoBotSpeedMultiplier = (game.autoBotSpeedMultiplier || 1) * 0.75;
+      }
+    },
+    {
+      id: 'trace_shield',
+      name: 'Trace Shield',
+      description: 'Negates first 50 trace increase per hack.',
+      basePrice: 650000,
+      priceMultiplier: 2.1,
+      amount: 0,
+      maxAmount: 3,
+      unlockAtRep: 1600,
+      effect: function() {
+        game.traceShieldValue = (game.traceShieldValue || 0) + 50;
+      }
+    },
+    {
+      id: 'experimental_encryption',
+      name: 'Experimental Encryption',
+      description: 'Reduces trace increase by 80% but lowers hack speed by 40%.',
+      basePrice: 800000,
+      priceMultiplier: 3,
+      amount: 0,
+      maxAmount: 2,
+      unlockAtRep: 1800,
+      effect: function() {
+        game.traceIncreaseMultiplier = (game.traceIncreaseMultiplier || 1) * 0.2;
+        game.hackSpeed *= 0.6;
+      }
+    }
+  ];
+
+  // Add late-game upgrades if not present
+  lateGameUpgrades.forEach(lgu => {
+    if (!game.upgrades[lgu.id]) {
+      game.upgrades[lgu.id] = { ...lgu };
+    }
+  });
+
+  // Override buyUpgrade to handle cooldowns & effects properly
+  const oldBuyUpgrade = window.buyUpgrade;
+  window.buyUpgrade = function(id) {
+    const upg = game.upgrades[id];
+    if (!upg) return;
+    if (game.points < upg.price) return;
+    if (upg.amount >= upg.maxAmount) return;
+
+    game.points -= upg.price;
+    upg.amount++;
+    upg.price = Math.floor(upg.price * upg.priceMultiplier);
+
+    if (upg.effect) upg.effect();
+
+    log(`Bought late-game upgrade: ${upg.name} (${upg.amount})`, '#0ff');
+    updateStats();
+    renderUpgrades();
+  };
+
+  // Handle cooldowns for activatable upgrades in game loop
+  const oldGameLoop = window.gameLoop;
+  window.gameLoop = function(timestamp) {
+    oldGameLoop(timestamp);
+
+    // Handle activatable upgrade cooldowns
+    Object.values(game.upgrades).forEach(upg => {
+      if (upg.cooldown && upg.cooldown > 0) {
+        upg.cooldown -= 0.016; // assuming 60fps
+        if (upg.cooldown < 0) upg.cooldown = 0;
+      }
+    });
+
+    // Neural Interface passive rep gain
+    if (game.neuralInterfaceActive) {
+      game.neuralRepTimer = (game.neuralRepTimer || 0) + 0.016;
+      if (game.neuralRepTimer >= 1) {
+        game.reputation += 0.05 * (game.upgrades.neural_interface ? game.upgrades.neural_interface.amount : 0);
+        game.neuralRepTimer = 0;
+        updateStats();
+      }
+    }
+  };
+})();
+</script>
